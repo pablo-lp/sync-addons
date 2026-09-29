@@ -24,36 +24,6 @@ class SyncTriggerAutomation(models.Model):
         "sync.project", related="sync_task_id.project_id", readonly=True
     )
 
-    def write(self, vals):
-        vals = dict(vals)
-
-        # Fields coming from delegated base.automation must be written
-        # directly on the parent record. Going through the automatically
-        # generated related field may lose the value of computed/stored
-        # fields such as `trigger` during the inverse.
-        automation_fields = {
-            name
-            for name, field in self._fields.items()
-            if getattr(field, "inherited", False)
-            and getattr(field, "inherited_field", False)
-            and str(field.inherited_field).startswith("base.automation.")
-        }
-
-        automation_vals = {
-            name: value
-            for name, value in vals.items()
-            if name in automation_fields
-        }
-
-        if automation_vals:
-            self.automation_id.write(automation_vals)
-
-        return super().write({
-            name: value
-            for name, value in vals.items()
-            if name not in automation_fields
-        })
-
     def unlink(self):
         actions = self.action_server_ids
         automations = self.automation_id
